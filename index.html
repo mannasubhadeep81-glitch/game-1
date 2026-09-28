@@ -1,15 +1,29 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Lamborghini City Drive</title>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><title>City Drive</title>
 <style>
-html,body{margin:0;height:100%;overflow:hidden;background:#111;font-family:Arial,sans-serif}canvas{display:block;width:100%;height:100%;background:linear-gradient(#75cfff 0 55%,#5b8d42 55% 100%)}#hud{position:fixed;top:16px;left:16px;color:#fff;font-weight:700;text-shadow:0 2px 4px #000;z-index:2}#help{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);color:#fff;background:#0008;padding:10px 16px;border-radius:12px;z-index:2}button{padding:10px 16px;border:0;border-radius:10px;font-weight:700} </style>
-</head><body><div id="hud">LAMBORGHINI CITY DRIVE<br><span id="speed">Speed: 0</span></div><div id="help">W/S = accelerate/brake • A/D = steer • R = reset</div><canvas id="game"></canvas>
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#72b64c;font-family:Arial,sans-serif;touch-action:none}canvas{display:block;width:100vw;height:100vh}.hud{position:fixed;top:12px;left:12px;color:white;font-weight:800;font-size:16px;text-shadow:0 2px 4px #000;z-index:5}.controls{position:fixed;left:0;right:0;bottom:20px;display:flex;justify-content:space-between;padding:0 22px;z-index:5;pointer-events:none}.group{display:flex;gap:12px;pointer-events:auto}button{width:64px;height:64px;border:0;border-radius:18px;background:#111c;color:#fff;font-size:25px;font-weight:800;box-shadow:0 3px 10px #0008}#go{font-size:16px;width:90px}.hint{position:fixed;bottom:92px;left:50%;transform:translateX(-50%);color:#fff;background:#0008;padding:7px 12px;border-radius:10px;font-size:12px;z-index:4}
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+<div class="hud">CITY DRIVE<br><span id="speed">Speed: 0 km/h</span></div>
+<div class="hint">Use buttons or W A S D</div>
+<div class="controls"><div class="group"><button id="left">◀</button><button id="right">▶</button></div><div class="group"><button id="go">ACCEL</button><button id="brake">BRAKE</button><button id="reset">↻</button></div></div>
 <script>
-const c=document.getElementById('game'),x=c.getContext('2d');let W,H;function resize(){W=c.width=innerWidth*devicePixelRatio;H=c.height=innerHeight*devicePixelRatio;x.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);W=innerWidth;H=innerHeight}addEventListener('resize',resize);resize();
-let car={px:0,spd:0,ang:0};let keys={};addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=1;if(e.key.toLowerCase()==='r')car={px:0,spd:0,ang:0}});addEventListener('keyup',e=>keys[e.key.toLowerCase()]=0);
-function road(){x.fillStyle='#50545a';x.fillRect(W*.25,0,W*.5,H);x.strokeStyle='#eee';x.lineWidth=5;x.setLineDash([35,30]);x.lineDashOffset=-(car.spd*2);x.beginPath();x.moveTo(W/2,0);x.lineTo(W/2,H);x.stroke();x.setLineDash([]);x.strokeStyle='#fff';x.lineWidth=7;x.beginPath();x.moveTo(W*.25,0);x.lineTo(W*.25,H);x.moveTo(W*.75,0);x.lineTo(W*.75,H);x.stroke()}
-function city(){for(let i=0;i<14;i++){let bx=(i*137+((car.spd*8)%137))-137,bh=80+(i*53)%180;let side=i%2?W*.03:W*.77;x.fillStyle=['#8795a1','#66727d','#9b806c','#536778'][i%4];x.fillRect(side,bh*.3,W*.16,bh);for(let wy=bh*.3+15;wy<bh-8;wy+=25){x.fillStyle='#ffd85a';for(let wx=side+12;wx<side+W*.16-10;wx+=25)x.fillRect(wx,wy,10,12)}}}
-function drawCar(){let cx=W/2+car.px,cy=H*.72;x.save();x.translate(cx,cy);x.rotate(car.ang*.08);x.fillStyle='#111';x.fillRect(-48,-25,96,50);x.fillStyle='#e8b600';x.fillRect(-40,-20,80,40);x.fillStyle='#20252a';x.fillRect(-25,-17,50,16);x.fillStyle='#ddd';x.fillRect(-43,-21,10,8);x.fillRect(33,-21,10,8);x.fillStyle='#111';x.fillRect(-42,17,18,9);x.fillRect(24,17,18,9);x.restore()}
-function loop(){if(keys.w)car.spd=Math.min(18,car.spd+.25);else if(keys.s)car.spd=Math.max(-5,car.spd-.3);else car.spd*=.97;if(keys.a){car.px-=5;car.ang=-.35}else if(keys.d){car.px+=5;car.ang=.35}else car.ang*=.8;car.px=Math.max(-W*.22,Math.min(W*.22,car.px));x.clearRect(0,0,W,H);x.fillStyle='#72b64c';x.fillRect(0,0,W,H);city();road();drawCar();document.getElementById('speed').textContent='Speed: '+Math.round(Math.max(0,car.spd)*12)+' km/h';requestAnimationFrame(loop)}loop();
+const canvas=document.getElementById('game'),ctx=canvas.getContext('2d');let W=0,H=0,dpr=1;
+function resize(){dpr=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;canvas.width=Math.floor(W*dpr);canvas.height=Math.floor(H*dpr);canvas.style.width=W+'px';canvas.style.height=H+'px';ctx.setTransform(dpr,0,0,dpr,0,0)}addEventListener('resize',resize);resize();
+let car={x:0,speed:0,steer:0};let keys={};
+addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;if(e.key.toLowerCase()==='r')reset()});addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
+function bind(id,key){const b=document.getElementById(id);['pointerdown','touchstart'].forEach(ev=>b.addEventListener(ev,e=>{e.preventDefault();keys[key]=true},{passive:false}));['pointerup','pointercancel','pointerleave','touchend'].forEach(ev=>b.addEventListener(ev,e=>{e.preventDefault();keys[key]=false},{passive:false}))}
+bind('left','a');bind('right','d');bind('go','w');bind('brake','s');document.getElementById('reset').onclick=reset;
+function reset(){car={x:0,speed:0,steer:0}}
+function draw(){ctx.clearRect(0,0,W,H);ctx.fillStyle='#69ad48';ctx.fillRect(0,0,W,H);
+let roadW=W*.58;let rx=(W-roadW)/2;ctx.fillStyle='#454a50';ctx.fillRect(rx,0,roadW,H);ctx.fillStyle='#ddd';ctx.fillRect(rx+5,0,5,H);ctx.fillRect(rx+roadW-10,0,5,H);
+ctx.strokeStyle='#f4f4f4';ctx.lineWidth=4;ctx.setLineDash([30,24]);ctx.lineDashOffset=-(performance.now()/12*car.speed/10)%54;ctx.beginPath();ctx.moveTo(W/2,0);ctx.lineTo(W/2,H);ctx.stroke();ctx.setLineDash([]);
+for(let i=0;i<10;i++){let y=((i*140+performance.now()*car.speed*.05)% (H+180))-120;let side=i%2?rx-70:rx+roadW+20;let bh=70+(i%3)*35;ctx.fillStyle=['#71808b','#8d7666','#5d6d7a'][i%3];ctx.fillRect(side,y,bh,bh+100);ctx.fillStyle='#ffd85a';for(let wy=y+15;wy<y+bh+85;wy+=25)ctx.fillRect(side+12,wy,10,12)}
+let cx=W/2+car.x,cy=H*.68;ctx.save();ctx.translate(cx,cy);ctx.rotate(car.steer*.05);ctx.fillStyle='#111';ctx.fillRect(-50,-28,100,56);ctx.fillStyle='#e6b400';ctx.fillRect(-43,-23,86,46);ctx.fillStyle='#26313a';ctx.fillRect(-28,-19,56,18);ctx.fillStyle='#111';ctx.fillRect(-45,18,18,10);ctx.fillRect(27,18,18,10);ctx.fillStyle='#fff';ctx.fillRect(-42,-20,9,7);ctx.fillRect(33,-20,9,7);ctx.restore();
+}
+function loop(){if(keys.w)car.speed=Math.min(20,car.speed+.32);else if(keys.s)car.speed=Math.max(0,car.speed-.5);else car.speed*=.985;if(keys.a){car.x-=Math.max(2,car.speed*.22);car.steer=-1}else if(keys.d){car.x+=Math.max(2,car.speed*.22);car.steer=1}else car.steer*=.8;let limit=W*.23;car.x=Math.max(-limit,Math.min(limit,car.x));document.getElementById('speed').textContent='Speed: '+Math.round(car.speed*10)+' km/h';draw();requestAnimationFrame(loop)}loop();
 </script></body></html>
