@@ -9,9 +9,9 @@ canvas{display:block;width:100vw;height:100vh;touch-action:none}
 .hud{position:fixed;top:12px;left:12px;color:white;font-weight:800;font-size:16px;text-shadow:0 2px 4px #000;z-index:20;pointer-events:none}
 .controls{position:fixed;left:0;right:0;bottom:max(18px,env(safe-area-inset-bottom));display:flex;justify-content:space-between;align-items:flex-end;padding:0 12px;z-index:50;pointer-events:none}
 .group{display:flex;gap:8px;pointer-events:auto}
-button{width:64px;height:64px;border:2px solid #ffffff66;border-radius:18px;background:#111c;color:#fff;font-size:25px;font-weight:800;box-shadow:0 4px 12px #0009;touch-action:none;-webkit-tap-highlight-color:transparent}
+button{width:64px;height:64px;border:2px solid #ffffff66;border-radius:18px;background:#111c;color:#fff;font-size:25px;font-weight:800;box-shadow:0 4px 12px #0009;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 button:active{background:#fff9;color:#111;transform:scale(.95)}
-#go,#brake{width:78px;font-size:13px}#reset{width:58px}
+#go,#brake{width:78px;font-size:13px}#go.on{background:#159447;border-color:#fff}#reset{width:58px}
 .hint{position:fixed;bottom:94px;left:50%;transform:translateX(-50%);color:#fff;background:#0009;padding:7px 12px;border-radius:10px;font-size:12px;z-index:20;pointer-events:none;white-space:nowrap}
 @media(max-width:600px){button{width:60px;height:60px}.controls{padding:0 8px}.hint{font-size:10px}}
 </style>
@@ -19,10 +19,10 @@ button:active{background:#fff9;color:#111;transform:scale(.95)}
 <body>
 <canvas id="game"></canvas>
 <div class="hud">LAMBORGHINI CITY DRIVE<br><span id="speed">Speed: 0 km/h</span></div>
-<div class="hint">TAP ACCEL to drive • ◀ ▶ to steer • ↻ reset</div>
+<div class="hint">ACCEL = tap ON/OFF • ◀ ▶ = steer • BRAKE = stop</div>
 <div class="controls">
 <div class="group"><button id="left">◀</button><button id="right">▶</button></div>
-<div class="group"><button id="go">ACCEL</button><button id="brake">BRAKE</button><button id="reset">↻</button></div>
+<div class="group"><button id="go">ACCEL OFF</button><button id="brake">BRAKE</button><button id="reset">↻</button></div>
 </div>
 <script>
 const canvas=document.getElementById('game'),ctx=canvas.getContext('2d');let W=0,H=0,dpr=1;
@@ -31,18 +31,15 @@ addEventListener('resize',resize);resize();
 let car={x:0,speed:0,steer:0};let keys={};let autoDrive=false;
 addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;if(e.key.toLowerCase()==='r')reset()});
 addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
-function press(id,key){const b=document.getElementById(id);const down=e=>{e.preventDefault();keys[key]=true};const up=e=>{e.preventDefault();keys[key]=false};b.addEventListener('pointerdown',down,{passive:false});b.addEventListener('pointerup',up,{passive:false});b.addEventListener('pointercancel',up,{passive:false});b.addEventListener('lostpointercapture',up,{passive:false})}
-press('left','a');press('right','d');
+function hold(id,key){const b=document.getElementById(id);const down=e=>{e.preventDefault();keys[key]=true};const up=e=>{e.preventDefault();keys[key]=false};b.addEventListener('pointerdown',down,{passive:false});b.addEventListener('pointerup',up,{passive:false});b.addEventListener('pointercancel',up,{passive:false})}
+hold('left','a');hold('right','d');
 const go=document.getElementById('go'),brake=document.getElementById('brake'),resetBtn=document.getElementById('reset');
-go.addEventListener('click',e=>{e.preventDefault();autoDrive=!autoDrive;go.textContent=autoDrive?'DRIVING':'ACCEL'},{passive:false});
-brake.addEventListener('click',e=>{e.preventDefault();autoDrive=false;keys.s=true;setTimeout(()=>keys.s=false,180)},{passive:false});
-resetBtn.addEventListener('click',e=>{e.preventDefault();reset()},{passive:false});
-function reset(){car={x:0,speed:0,steer:0};autoDrive=false;go.textContent='ACCEL'}
-function draw(){
-ctx.clearRect(0,0,W,H);ctx.fillStyle='#69ad48';ctx.fillRect(0,0,W,H);let roadW=W*.58,rx=(W-roadW)/2;
-ctx.fillStyle='#454a50';ctx.fillRect(rx,0,roadW,H);ctx.fillStyle='#ddd';ctx.fillRect(rx+5,0,5,H);ctx.fillRect(rx+roadW-10,0,5,H);
-ctx.strokeStyle='#f4f4f4';ctx.lineWidth=4;ctx.setLineDash([30,24]);ctx.lineDashOffset=-(performance.now()/12*car.speed/10)%54;ctx.beginPath();ctx.moveTo(W/2,0);ctx.lineTo(W/2,H);ctx.stroke();ctx.setLineDash([]);
-for(let i=0;i<10;i++){let y=((i*140+performance.now()*car.speed*.09)%(H+180))-120;let side=i%2?rx-70:rx+roadW+20;let bh=70+(i%3)*35;ctx.fillStyle=['#71808b','#8d7666','#5d6d7a'][i%3];ctx.fillRect(side,y,bh,bh+100);ctx.fillStyle='#ffd85a';for(let wy=y+15;wy<y+bh+85;wy+=25)ctx.fillRect(side+12,wy,10,12)}
-let cx=W/2+car.x,cy=H*.68;ctx.save();ctx.translate(cx,cy);ctx.rotate(car.steer*.05);ctx.fillStyle='#111';ctx.fillRect(-50,-28,100,56);ctx.fillStyle='#e6b400';ctx.fillRect(-43,-23,86,46);ctx.fillStyle='#26313a';ctx.fillRect(-28,-19,56,18);ctx.fillStyle='#111';ctx.fillRect(-45,18,18,10);ctx.fillRect(27,18,18,10);ctx.fillStyle='#fff';ctx.fillRect(-42,-20,9,7);ctx.fillRect(33,-20,9,7);ctx.restore()}
-function loop(){if(keys.w||autoDrive)car.speed=Math.min(20,car.speed+.32);else if(keys.s)car.speed=Math.max(0,car.speed-.7);else car.speed*=.985;if(keys.a){car.x-=Math.max(2,car.speed*.22);car.steer=-1}else if(keys.d){car.x+=Math.max(2,car.speed*.22);car.steer=1}else car.steer*=.8;let limit=W*.23;car.x=Math.max(-limit,Math.min(limit,car.x));document.getElementById('speed').textContent='Speed: '+Math.round(car.speed*10)+' km/h';draw();requestAnimationFrame(loop)}loop();
+function toggleDrive(e){e.preventDefault();e.stopPropagation();autoDrive=!autoDrive;go.textContent=autoDrive?'ACCEL ON':'ACCEL OFF';go.classList.toggle('on',autoDrive)}
+go.addEventListener('pointerdown',toggleDrive,{passive:false});
+go.addEventListener('click',e=>e.preventDefault(),{passive:false});
+brake.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();autoDrive=false;go.textContent='ACCEL OFF';go.classList.remove('on');car.speed=0},{passive:false});
+resetBtn.addEventListener('pointerdown',e=>{e.preventDefault();reset()},{passive:false});
+function reset(){car={x:0,speed:0,steer:0};autoDrive=false;go.textContent='ACCEL OFF';go.classList.remove('on')}
+function draw(){ctx.clearRect(0,0,W,H);ctx.fillStyle='#69ad48';ctx.fillRect(0,0,W,H);let roadW=W*.58,rx=(W-roadW)/2;ctx.fillStyle='#454a50';ctx.fillRect(rx,0,roadW,H);ctx.fillStyle='#ddd';ctx.fillRect(rx+5,0,5,H);ctx.fillRect(rx+roadW-10,0,5,H);ctx.strokeStyle='#f4f4f4';ctx.lineWidth=4;ctx.setLineDash([30,24]);ctx.lineDashOffset=-(performance.now()/12*car.speed/10)%54;ctx.beginPath();ctx.moveTo(W/2,0);ctx.lineTo(W/2,H);ctx.stroke();ctx.setLineDash([]);for(let i=0;i<10;i++){let y=((i*140+performance.now()*car.speed*.09)%(H+180))-120;let side=i%2?rx-70:rx+roadW+20;let bh=70+(i%3)*35;ctx.fillStyle=['#71808b','#8d7666','#5d6d7a'][i%3];ctx.fillRect(side,y,bh,bh+100);ctx.fillStyle='#ffd85a';for(let wy=y+15;wy<y+bh+85;wy+=25)ctx.fillRect(side+12,wy,10,12)}let cx=W/2+car.x,cy=H*.68;ctx.save();ctx.translate(cx,cy);ctx.rotate(car.steer*.05);ctx.fillStyle='#111';ctx.fillRect(-50,-28,100,56);ctx.fillStyle='#e6b400';ctx.fillRect(-43,-23,86,46);ctx.fillStyle='#26313a';ctx.fillRect(-28,-19,56,18);ctx.fillStyle='#111';ctx.fillRect(-45,18,18,10);ctx.fillRect(27,18,18,10);ctx.fillStyle='#fff';ctx.fillRect(-42,-20,9,7);ctx.fillRect(33,-20,9,7);ctx.restore()}
+function loop(){if(autoDrive||keys.w)car.speed=Math.min(20,car.speed+.32);else if(keys.s)car.speed=Math.max(0,car.speed-.7);else car.speed*=.985;if(keys.a){car.x-=Math.max(2,car.speed*.22);car.steer=-1}else if(keys.d){car.x+=Math.max(2,car.speed*.22);car.steer=1}else car.steer*=.8;let limit=W*.23;car.x=Math.max(-limit,Math.min(limit,car.x));document.getElementById('speed').textContent='Speed: '+Math.round(car.speed*10)+' km/h';draw();requestAnimationFrame(loop)}loop();
 </script></body></html>
